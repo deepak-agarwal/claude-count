@@ -22,6 +22,14 @@ Claude Count is a small macOS menu bar app that shows your current Claude usage.
 3. Drag `Claude Count.app` into `Applications`.
 4. Open the app.
 
+If macOS blocks the downloaded app, developer users can build and install it with Homebrew instead:
+
+```bash
+brew tap deepak-agarwal/claude-count
+brew install --HEAD claude-count
+claude-count
+```
+
 ## Use
 
 Once the app is running, it lives in the macOS menu bar.
