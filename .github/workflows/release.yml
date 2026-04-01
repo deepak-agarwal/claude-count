@@ -10,6 +10,8 @@ permissions:
 
 env:
   RELEASE_DMG_NAME: claude-count.dmg
+  APPLE_CERT_PATH: /tmp/apple-signing-cert.p12
+  KEYCHAIN_PATH: /tmp/claude-count-signing.keychain-db
 
 jobs:
   build:
@@ -24,8 +26,45 @@ jobs:
       - name: Build release binary
         run: cargo build --release
 
+      - name: Import Apple signing certificate
+        if: ${{ secrets.APPLE_DEVELOPER_ID_CERT_P12 != '' && secrets.APPLE_DEVELOPER_ID_CERT_PASSWORD != '' && secrets.APPLE_SIGNING_IDENTITY != '' }}
+        env:
+          APPLE_DEVELOPER_ID_CERT_P12: ${{ secrets.APPLE_DEVELOPER_ID_CERT_P12 }}
+          APPLE_DEVELOPER_ID_CERT_PASSWORD: ${{ secrets.APPLE_DEVELOPER_ID_CERT_PASSWORD }}
+        run: |
+          echo "$APPLE_DEVELOPER_ID_CERT_P12" | base64 --decode > "$APPLE_CERT_PATH"
+          security create-keychain -p runner "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p runner "$KEYCHAIN_PATH"
+          security import "$APPLE_CERT_PATH" -P "$APPLE_DEVELOPER_ID_CERT_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security list-keychains -d user -s "$KEYCHAIN_PATH"
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k runner "$KEYCHAIN_PATH"
+
       - name: Build DMG
+        env:
+          SIGN_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
         run: bash scripts/package-macos.sh target/release/claude-code-usage-monitor dist/${{ env.RELEASE_DMG_NAME }}
+
+      - name: Sign DMG
+        if: ${{ secrets.APPLE_DEVELOPER_ID_CERT_P12 != '' && secrets.APPLE_DEVELOPER_ID_CERT_PASSWORD != '' && secrets.APPLE_SIGNING_IDENTITY != '' }}
+        env:
+          SIGN_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+        run: |
+          codesign --force --sign "$SIGN_IDENTITY" --timestamp dist/${{ env.RELEASE_DMG_NAME }}
+
+      - name: Notarize DMG
+        if: ${{ secrets.APPLE_ID != '' && secrets.APPLE_APP_SPECIFIC_PASSWORD != '' && secrets.APPLE_TEAM_ID != '' }}
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          xcrun notarytool submit dist/${{ env.RELEASE_DMG_NAME }} \
+            --apple-id "$APPLE_ID" \
+            --password "$APPLE_APP_SPECIFIC_PASSWORD" \
+            --team-id "$APPLE_TEAM_ID" \
+            --wait
+          xcrun stapler staple dist/${{ env.RELEASE_DMG_NAME }}
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2

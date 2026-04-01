@@ -7,6 +7,7 @@ APP_NAME="Claude Count"
 BIN_PATH="${1:-$ROOT_DIR/target/release/claude-code-usage-monitor}"
 OUTPUT_DMG="${2:-$ROOT_DIR/dist/claude-count.dmg}"
 VERSION="$(awk -F ' = ' '/^version = / { gsub(/"/, "", $2); print $2; exit }' "$ROOT_DIR/Cargo.toml")"
+SIGN_IDENTITY="${SIGN_IDENTITY:--}"
 BUILD_DIR="$ROOT_DIR/target/macos-package"
 APP_DIR="$BUILD_DIR/$APP_NAME.app"
 CONTENTS_DIR="$APP_DIR/Contents"
@@ -70,6 +71,9 @@ sips -z 64 64 -s format png "$SOURCE_ICON" --out "$ICONSET_DIR/icon_32x32@2x.png
 sips -z 128 128 -s format png "$SOURCE_ICON" --out "$ICONSET_DIR/icon_128x128.png" >/dev/null
 sips -z 256 256 -s format png "$SOURCE_ICON" --out "$ICONSET_DIR/icon_128x128@2x.png" >/dev/null
 iconutil -c icns "$ICONSET_DIR" -o "$ICNS_PATH"
+
+xattr -cr "$APP_DIR" || true
+codesign --force --deep --sign "$SIGN_IDENTITY" "$APP_DIR"
 
 mkdir -p "$STAGING_DIR"
 cp -R "$APP_DIR" "$STAGING_DIR/"
