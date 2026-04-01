@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 env:
-  RELEASE_DMG_NAME: claude-code-usage-monitor.dmg
+  RELEASE_DMG_NAME: claude-count.dmg
 
 jobs:
   build:

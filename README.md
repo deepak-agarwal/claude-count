@@ -1,6 +1,6 @@
-# Claude Code Usage Monitor
+# Claude Count
 
-Claude Code Usage Monitor is a small macOS menu bar app that shows your current Claude usage.
+Claude Count is a small macOS menu bar app that shows your current Claude usage.
 
 ## What It Does
 
@@ -19,7 +19,7 @@ Claude Code Usage Monitor is a small macOS menu bar app that shows your current 
 
 1. Download the latest `.dmg` from the Releases page.
 2. Open the `.dmg`.
-3. Drag `Claude Code Usage Monitor.app` into `Applications`.
+3. Drag `Claude Count.app` into `Applications`.
 4. Open the app.
 
 ## Use

@@ -110,7 +110,7 @@ fn app_support_dir() -> PathBuf {
         .unwrap_or_else(|| PathBuf::from("."))
         .join("Library")
         .join("Application Support")
-        .join("ClaudeCodeUsageMonitor")
+        .join("ClaudeCount")
 }
 
 fn settings_path() -> PathBuf {
@@ -169,7 +169,7 @@ fn launch_claude_login() {
 fn show_login_dialog(message: &str) {
     let message = sanitize_for_applescript(message);
     let script = format!(
-        "display dialog \"{}\" buttons {{\"Not Now\", \"Sign In\"}} default button \"Sign In\" with title \"Claude Code Usage Monitor\"",
+        "display dialog \"{}\" buttons {{\"Not Now\", \"Sign In\"}} default button \"Sign In\" with title \"Claude Count\"",
         message
     );
     thread::spawn(move || {
@@ -509,7 +509,8 @@ impl App {
             .with_menu(Box::new(
                 self.menu.take().ok_or_else(|| "Menu missing".to_string())?,
             ))
-            .with_tooltip("Claude Code Usage Monitor")
+            .with_tooltip("Claude Count")
+            .with_title("Starting...")
             .with_icon(icon)
             .build()
             .map_err(|e| format!("Unable to create tray icon: {e}"))?;
@@ -547,6 +548,10 @@ impl App {
             if let Ok(icon) = build_progress_icon(session_percent) {
                 let _ = tray.set_icon(Some(icon));
             }
+            tray.set_title(Some(format!(
+                "5h {:.0}%  7d {:.0}%",
+                session_percent, weekly_percent
+            )));
             let _ = tray.set_tooltip(Some(&format!(
                 "5h {:.0}%\n7d {:.0}%\n{}",
                 session_percent,
@@ -631,6 +636,9 @@ impl App {
                         self.set_status_labels(0.0, 0.0, "Sign in required", "Waiting for login");
                         self.set_login_menu_state(true, "Sign In to Claude");
                         self.set_progress_icon(0.0, 0.0);
+                        if let Some(tray) = &self.tray {
+                            tray.set_title(Some("Sign In"));
+                        }
                         if !self.login_prompt_shown {
                             self.login_prompt_shown = true;
                             show_login_dialog(
@@ -643,6 +651,9 @@ impl App {
                         self.set_status_labels(0.0, 0.0, "Session expired", "Waiting for login");
                         self.set_login_menu_state(true, "Sign In to Claude");
                         self.set_progress_icon(0.0, 0.0);
+                        if let Some(tray) = &self.tray {
+                            tray.set_title(Some("Sign In"));
+                        }
                         if !self.login_prompt_shown {
                             self.login_prompt_shown = true;
                             show_login_dialog(
@@ -655,6 +666,9 @@ impl App {
                         self.set_status_labels(0.0, 0.0, "Network error", "Retrying automatically");
                         self.set_login_menu_state(false, "Connected");
                         self.set_progress_icon(0.0, 0.0);
+                        if let Some(tray) = &self.tray {
+                            tray.set_title(Some("Retrying"));
+                        }
                         notify(
                             self.language.strings().window_title,
                             &format!("Unable to refresh usage: {message}"),
@@ -684,7 +698,7 @@ impl ApplicationHandler<UserEvent> for App {
 
         if let Err(error) = self.build_tray() {
             diagnose::log_error("unable to start menu bar app", &error);
-            notify("Claude Code Usage Monitor", &error);
+            notify("Claude Count", &error);
             event_loop.exit();
             return;
         }

@@ -1,7 +1,7 @@
 use super::Strings;
 
 pub(super) const STRINGS: Strings = Strings {
-    window_title: "Moniteur d'utilisation Claude Code",
+    window_title: "Claude Count",
     refresh: "Actualiser",
     update_frequency: "Fréquence de mise à jour",
     one_minute: "1 minute",
