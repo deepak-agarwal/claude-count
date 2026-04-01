@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 env:
-  RELEASE_ASSET_NAME: claude-code-usage-monitor-macos
+  RELEASE_DMG_NAME: claude-code-usage-monitor.dmg
 
 jobs:
   build:
@@ -24,11 +24,11 @@ jobs:
       - name: Build release binary
         run: cargo build --release
 
-      - name: Prepare release asset
-        run: cp target/release/claude-code-usage-monitor ${{ env.RELEASE_ASSET_NAME }}
+      - name: Build DMG
+        run: bash scripts/package-macos.sh target/release/claude-code-usage-monitor dist/${{ env.RELEASE_DMG_NAME }}
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: ${{ env.RELEASE_ASSET_NAME }}
+          files: dist/${{ env.RELEASE_DMG_NAME }}
           generate_release_notes: true
